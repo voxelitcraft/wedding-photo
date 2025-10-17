@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Düğün & Nişan Fotoğraf Yükleme</title>
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Soft wedding palette adjustments */
+    :root{
+      --accent:#D9A7B1; /* blush */
+      --accent-dark:#B66B7A; /* deeper blush */
+      --gold:#D4AF37;
+      --ivory:#FFF8F2;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-[var(--ivory)] via-white to-[var(--accent)]/10 flex items-center justify-center p-6">
+  <main class="w-full max-w-3xl bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-10">
+    <header class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent-dark)] font-semibold text-xl">♡</div>
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-800">Düğün / Nişan Fotoğraf Yükleme</h1>
+        <p class="text-sm text-gray-600">Fotoğraf seçin, önizleyin ve gönderin — zarif tasarım düğün temasına göre sunulmuştur.</p>
+      </div>
+    </header>
+
+    <section class="mt-6">
+      <label for="fileInput" class="block">
+        <div id="dropZone" class="relative border-2 border-dashed border-[var(--accent)]/40 rounded-lg p-6 text-center cursor-pointer hover:border-[var(--accent-dark)] transition">
+          <input id="fileInput" type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+
+          <div class="pointer-events-none">
+            <svg class="mx-auto h-12 w-12 text-[var(--accent-dark)]/80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h10a4 4 0 004-4V7a4 4 0 00-4-4H7a4 4 0 00-4 4v8z"/></svg>
+            <p class="mt-2 text-sm text-gray-700">Dosya seçmek için tıklayın veya sürükleyip bırakın</p>
+            <p class="text-xs text-gray-500 mt-1">JPG, PNG önerilir — maksimum boyut tarayıcıya bağlıdır</p>
+          </div>
+        </div>
+      </label>
+
+      <div id="previewArea" class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+      <div class="mt-6 flex items-center gap-3">
+        <button id="uploadBtn" class="px-5 py-2 rounded-full bg-[var(--accent-dark)] text-white font-medium shadow hover:scale-[1.02] transition disabled:opacity-50" disabled>Gönder</button>
+        <button id="clearBtn" class="px-4 py-2 rounded-full border border-[var(--accent)] text-[var(--accent-dark)] bg-white hover:bg-[var(--accent)]/5 transition" disabled>Temizle</button>
+        <div id="status" class="ml-auto text-sm text-gray-600"></div>
+      </div>
+
+      <div id="responseBox" class="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 hidden"></div>
+    </section>
+
+    <footer class="mt-6 text-xs text-gray-500 text-center">Gönderilen dosyanın ismi isteğe göre değiştirilebilir. Bu sayfa tek HTML dosyasıdır.</footer>
+  </main>
+
+  <script>
+    // Elements
+    const fileInput = document.getElementById('fileInput');
+    const previewArea = document.getElementById('previewArea');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const status = document.getElementById('status');
+    const responseBox = document.getElementById('responseBox');
+    const dropZone = document.getElementById('dropZone');
+
+    let chosenFiles = [];
+
+    // Helpers
+    function createPreview(file, index){
+      const url = URL.createObjectURL(file);
+      const wrap = document.createElement('div');
+      wrap.className = 'relative rounded-lg overflow-hidden border bg-white p-1';
+      wrap.innerHTML = `
+        <img src="${url}" alt="preview" class="w-full h-40 object-cover block" />
+        <button data-idx="${index}" class="remove absolute top-2 right-2 bg-white/80 rounded-full p-1 shadow text-sm">✕</button>
+      `;
+      previewArea.appendChild(wrap);
+
+      wrap.querySelector('.remove').addEventListener('click', (e)=>{
+        const idx = Number(e.currentTarget.getAttribute('data-idx'));
+        chosenFiles.splice(idx,1);
+        renderPreviews();
+      });
+    }
+
+    function renderPreviews(){
+      previewArea.innerHTML = '';
+      chosenFiles.forEach((f,i)=> createPreview(f,i));
+      uploadBtn.disabled = chosenFiles.length === 0;
+      clearBtn.disabled = chosenFiles.length === 0;
+      status.textContent = chosenFiles.length ? `${chosenFiles.length} fotoğraf seçildi` : '';
+    }
+
+    // File selection
+    fileInput.addEventListener('change', (e)=>{
+      const files = Array.from(e.target.files);
+      // append to chosenFiles
+      chosenFiles = chosenFiles.concat(files);
+      renderPreviews();
+    });
+
+    // Drag/drop UX
+    ['dragenter','dragover'].forEach(ev=>{
+      dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.add('ring-2','ring-[var(--accent)]','ring-offset-2'); });
+    });
+    ['dragleave','drop'].forEach(ev=>{
+      dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.remove('ring-2','ring-[var(--accent)]','ring-offset-2'); });
+    });
+    dropZone.addEventListener('drop', (e)=>{
+      const dt = e.dataTransfer;
+      if(!dt) return;
+      const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
+      chosenFiles = chosenFiles.concat(files);
+      renderPreviews();
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', ()=>{
+      chosenFiles = [];
+      fileInput.value = '';
+      renderPreviews();
+      responseBox.classList.add('hidden');
+      responseBox.textContent = '';
+    });
+
+    // Upload (sends first file only, following the provided snippet)
+    uploadBtn.addEventListener('click', async ()=>{
+      if(!chosenFiles.length) return;
+      uploadBtn.disabled = true;
+      status.textContent = 'Gönderiliyor...';
+      responseBox.classList.add('hidden');
+      responseBox.textContent = '';
+
+      try{
+        // Use the exact approach you provided: append file and include that specific filename string
+        const formdata = new FormData();
+        // NOTE: the third parameter sets the filename the server sees — kept as in your example.
+        formdata.append("data", chosenFiles[0], "/C:/Users/iboo_/OneDrive/Masaüstü/WhatsApp Görsel 2025-04-05 saat 12.14.20_695b3425.jpg");
+
+        const requestOptions = {
+          method: "POST",
+          body: formdata,
+          redirect: "follow"
+        };
+
+        const res = await fetch("https://voxelitai.app.n8n.cloud/webhook/upload-image", requestOptions);
+        const text = await res.text();
+        responseBox.textContent = `Sunucudan gelen yanıt:\n${text}`;
+        responseBox.classList.remove('hidden');
+        status.textContent = res.ok ? 'Yüklendi ✅' : 'Yükleme sırasında hata oluştu';
+      }catch(err){
+        console.error(err);
+        responseBox.textContent = `Hata: ${err.message}`;
+        responseBox.classList.remove('hidden');
+        status.textContent = 'Hata oluştu';
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+
+  </script>
+</body>
+</html>
